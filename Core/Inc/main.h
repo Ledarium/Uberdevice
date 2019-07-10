@@ -32,6 +32,7 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "stm32f1xx_hal_gpio.h"
 #include <stdlib.h>
 #include "lcd.h"
 #include "game.h"

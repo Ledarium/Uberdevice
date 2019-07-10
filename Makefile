@@ -22,7 +22,7 @@ TARGET = Uberdevice
 # debug build?
 DEBUG = 1
 # optimization
-OPT = -Og 
+OPT = -Og
 
 
 #######################################

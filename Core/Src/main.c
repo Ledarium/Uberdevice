@@ -69,6 +69,7 @@ bool minusButton = false;
 bool bigButton = false;
 
 static TimerHandle_t secondsTimerHandle = NULL;
+static TaskHandle_t xMusicHandle = NULL;
 
 /* USER CODE END PV */
 
@@ -499,7 +500,6 @@ void vTaskConfig(void *parameter) {
 	vTaskDelete(NULL);
 }
 
-/*
 void vTaskTurn(void *parameter) {
 	xTimerReset(secondsTimerHandle, 0);
 	
@@ -526,25 +526,15 @@ void vTaskTurn(void *parameter) {
 			xTaskCreate(vTaskOvertime, "vTaskOvertime", configMINIMAL_STACK_SIZE, NULL, 1, &xMusicHandle);
 		}
 		vTaskDelayUntil(&xLastWakeTime,100);
-		led2.Toggle();
-		
-#ifdef DEBUG
-		auto[minutes, seconds] = game.GetTimerValue();
-		buffer[0] = minutes;
-		buffer[1] = seconds;
-		buffer[2] = game.currentPlayer;
-		buffer[4] = game.playerScore[0];
-		buffer[5] = game.playerScore[1];
-		buffer[6] = game.playerScore[2];
-		usart.Send();
-#endif // DEBUG
-		
+
+		HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 	}
 	xTimerStop(secondsTimerHandle, 0);
-	game.ResetTurnTimer();
+	ResetTurnTimer();
+
 	if (xMusicHandle) {
 		vTaskDelete(xMusicHandle);
-		mp.Stop();
+		MusicStop();
 		xMusicHandle = NULL;
 	}
 	vTaskDelete(NULL);
@@ -555,7 +545,7 @@ void vTaskTurnEnd(void *parameter) {
 		int32_t delta = 0;
 		while (1) {
 			if (bigButton) {
-				game.ChangeScore(delta);
+				ChangeScore(delta);
 				break;
 			}
 			else if (plusButton)
@@ -568,8 +558,8 @@ void vTaskTurnEnd(void *parameter) {
 			}
 			vTaskDelay(10);
 		}
-	}
-	game.NextPlayer();
+  }
+	NextPlayer();
 	xTaskCreate(vTaskTurn, "TaskTurn", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	vTaskDelete(NULL);
 }
@@ -577,13 +567,13 @@ void vTaskTurnEnd(void *parameter) {
 void vTaskOvertime(void *parameter) {
 	while (1)
 	{
-		led2.SetHigh();
-		mp.Play(tracks[3]);
-		led2.SetLow();
+		HAL_GPIO_WritePin(LED2_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
+		MusicPlay();
+		HAL_GPIO_WritePin(LED2_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
 		vTaskDelay(1000);
 	}
 }
- */
+
 void vTimerCallback(TimerHandle_t xTimer) {
 	if (game.timerValue > 0)
 		game.timerValue--;

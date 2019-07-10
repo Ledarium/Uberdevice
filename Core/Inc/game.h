@@ -1,3 +1,5 @@
+#ifndef __GAME_H
+#define __GAME_H
 #define MAX_PLAYERS 6
 #define TIMER_MAX 180
 #define TIMER_STEP 5
@@ -26,3 +28,4 @@ uint32_t GetTimerValue();
 void ChangeScore(int8_t delta);
 void ResetTurnTimer();
 void NextPlayer();
+#endif

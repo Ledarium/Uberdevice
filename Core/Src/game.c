@@ -1,5 +1,3 @@
-#ifndef __GAME_H
-#define __GAME_H
 #include "game.h"
 
 void InitGameEngine() {
@@ -61,4 +59,3 @@ void NextPlayer() {
     game.currentPlayer = (game.currentPlayer + 1) % game.activePlayers;
     ResetTurnTimer();
 }
-#endif
