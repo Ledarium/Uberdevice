@@ -37,6 +37,11 @@ BUILD_DIR = build
 # C sources
 C_SOURCES =  \
 Middlewares/FreeRTOS/Src/tasks.c \
+Middlewares/FreeRTOS/Src/list.c \
+Middlewares/FreeRTOS/Src/port.c \
+Middlewares/FreeRTOS/Src/event_groups.c \
+Middlewares/FreeRTOS/Src/stream_buffer.c \
+Middlewares/FreeRTOS/Src/heap_4.c \
 Middlewares/FreeRTOS/Src/croutine.c \
 Middlewares/FreeRTOS/Src/queue.c \
 Middlewares/FreeRTOS/Src/timers.c \
@@ -134,11 +139,11 @@ C_INCLUDES =  \
 -ICore/Inc \
 -IDrivers/STM32F1xx_HAL_Driver/Inc \
 -IDrivers/STM32F1xx_HAL_Driver/Inc/Legacy \
--IMiddlewares/FreeRTOS/Inc \
 -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
 -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
 -IDrivers/CMSIS/Device/ST/STM32F1xx/Include \
 -IDrivers/CMSIS/Include \
+-IMiddlewares/FreeRTOS/Inc \
 -IDrivers/CMSIS/Include
 
 

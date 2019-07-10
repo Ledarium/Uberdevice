@@ -32,6 +32,13 @@ extern "C" {
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdlib.h>
+#include "lcd.h"
+#include "game.h"
+#include "FreeRTOS.h"
+#include "task.h" 
+#include "queue.h"
+#include "timers.h"
 
 /* USER CODE END Includes */
 
@@ -56,7 +63,22 @@ void HAL_TIM_MspPostInit(TIM_HandleTypeDef *htim);
 void Error_Handler(void);
 
 /* USER CODE BEGIN EFP */
+void vTaskLed(void *parameter);
+void vTaskButton(void *parameter);
+void vTaskDisplay(void *parameter);
 
+void vTaskBeep(void *parameter);
+void vTaskOvertime(void *parameter);
+
+void vTaskStateMachine(void *parameter);
+
+void vTaskPlayerSetup(void *parameter);
+void vTaskConfig(void *parameter);
+void vTaskTimerSetup(void *parameter);
+void vTaskTurn(void *parameter);
+void vTaskTurnEnd(void *parameter);
+
+void vTimerCallback(TimerHandle_t xTimer);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/

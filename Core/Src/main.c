@@ -24,13 +24,6 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include <stdlib.h>
-#include "lcd.h"
-#include "game.h"
-#include "FreeRTOS.h"
-#include "task.h" 
-#include "queue.h"
-#include "timers.h"
 
 /* USER CODE END Includes */
 
@@ -71,6 +64,11 @@ LCD_HandleTypeDef hlcd = {
     LCD_ROWS,
     LCD_COLS
 };
+bool plusButton = false;
+bool minusButton = false;
+bool bigButton = false;
+
+static TimerHandle_t secondsTimerHandle = NULL;
 
 /* USER CODE END PV */
 
@@ -129,6 +127,9 @@ int main(void)
   /* USER CODE BEGIN 2 */
   LCD_Init(&hlcd);
   InitGameEngine();
+
+	xTaskCreate(vTaskPlayerSetup, "Player", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	vTaskStartScheduler();
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -430,41 +431,21 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-void logic()
-{
-	led1.SetHigh();
-	usart.Send();
-	xTaskCreate(vTaskLed, "LED", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-//	xTaskCreate(vTaskStateMachine, "FSM", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-	xTaskCreate(vTaskPlayerSetup, "Player", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-	vTaskStartScheduler();
-	
-	while(1) {
-	
-	};
-}
 
 void vTaskPlayerSetup(void *parameter)
 {
 	while (1)
 	{
-		if (plusButton.PressedDebounced())
+		if (plusButton)
 		{
-			game.AddPlayer();
+			AddPlayer();
 		}
-		if (minusButton.PressedDebounced())
+		if (minusButton)
 		{
-			game.RemovePlayer();
+			RemovePlayer();
 		}
 		
-#ifdef DEBUG
-		for (auto i = 0; i < game.maxPlayers; i++)
-			buffer[i] = game.playerScore[i];
-		usart.Send();
-#endif // DEBUG
-		
-		
-		if (game.activePlayers > 1 && bigButton.PressedDebounced())
+		if (game.activePlayers > 1 && bigButton)
 			break;
 		
 		vTaskDelay(5);
@@ -476,17 +457,17 @@ void vTaskPlayerSetup(void *parameter)
 void vTaskTimerSetup(void *parameter) {
 	while (1)
 	{
-		if (plusButton.PressedDebounced())
+		if (plusButton)
 		{
-			game.IncrementTurnTime();
+			IncrementTurnTime();
 		}
-		else if (minusButton.PressedDebounced())
+		else if (minusButton)
 		{
-			game.DecrementTurnTime();
+			DecrementTurnTime();
 		}
 		else vTaskDelay(10);
 		
-		if (bigButton.PressedDebounced()) {
+		if (bigButton) {
 			break;
 		}
 		vTaskDelay(10);
@@ -514,12 +495,12 @@ void vTaskTimerSetup(void *parameter) {
 void vTaskConfig(void *parameter) {
 	while (1)
 	{
-		if (plusButton.PressedDebounced())
+		if (plusButton)
 			game.countScores = !game.countScores;
-		if (minusButton.PressedDebounced())
+		if (minusButton)
 		// show round number or change the way it counts
 			game.countScores = !game.countScores;
-		if (bigButton.PressedDebounced()) {
+		if (bigButton) {
 			break;
 		}
 		vTaskDelay(10);
@@ -537,15 +518,15 @@ void vTaskTurn(void *parameter) {
 	
 	while (1)
 	{
-		if (plusButton.PressedDebounced()) {
+		if (plusButton) {
 			xTaskCreate(vTaskTimerSetup, "TaskTimerSetup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 			break;
 		}
-		else if (minusButton.PressedDebounced()) {
+		else if (minusButton) {
 			xTaskCreate(vTaskConfig, "Config", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 			break;
 		}
-		else if (bigButton.PressedDebounced()) {
+		else if (bigButton) {
 			xTaskCreate(vTaskTurnEnd, "TaskTurnEnd", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 			break;
 		} 
@@ -583,15 +564,15 @@ void vTaskTurnEnd(void *parameter) {
 	if (game.countScores) {
 		int32_t delta = 0;
 		while (1) {
-			if (bigButton.PressedDebounced()) {
+			if (bigButton) {
 				game.ChangeScore(delta);
 				break;
 			}
-			else if (plusButton.PressedDebounced())
+			else if (plusButton)
 			{
 				delta++;
 			}
-			else if (minusButton.PressedDebounced())
+			else if (minusButton)
 			{
 				delta--;
 			}

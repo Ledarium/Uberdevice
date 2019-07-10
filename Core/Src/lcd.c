@@ -1,3 +1,5 @@
+#ifndef __LCD_H
+#define __LCD_H
 #include "lcd.h"
 
 #define LCD_COLS 20
@@ -117,3 +119,5 @@ void LCD_SendString(LCD_HandleTypeDef *lcd,  char *str) {
         str++;
     }
 }
+
+#endif
