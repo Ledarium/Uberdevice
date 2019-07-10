@@ -24,6 +24,7 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include "lcd.h"
 
 /* USER CODE END Includes */
 
@@ -53,6 +54,12 @@ UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_tx;
 
 /* USER CODE BEGIN PV */
+LCD_HandleTypeDef hlcd = { 
+    &hi2c1,
+    (0x27 << 1),
+    4,
+    20
+};
 
 /* USER CODE END PV */
 
@@ -109,7 +116,7 @@ int main(void)
   MX_USART1_UART_Init();
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
-
+  LCD_Init(&hlcd);
   /* USER CODE END 2 */
 
   /* Infinite loop */
