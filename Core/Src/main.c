@@ -25,6 +25,7 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "lcd.h"
+#include "game.h"
 #include <stdlib.h>
 
 /* USER CODE END Includes */
@@ -36,6 +37,9 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
+#define LCD_ADDR (0x27 << 1)
+#define LCD_COLS 20
+#define LCD_ROWS 4
 
 /* USER CODE END PD */
 
@@ -55,11 +59,13 @@ UART_HandleTypeDef huart1;
 DMA_HandleTypeDef hdma_usart1_tx;
 
 /* USER CODE BEGIN PV */
+
+GameEngine game;
 LCD_HandleTypeDef hlcd = { 
     &hi2c1,
-    (0x27 << 1),
-    4,
-    20
+    LCD_ADDR,
+    LCD_ROWS,
+    LCD_COLS
 };
 
 /* USER CODE END PV */
@@ -118,13 +124,13 @@ int main(void)
   MX_USB_DEVICE_Init();
   /* USER CODE BEGIN 2 */
   LCD_Init(&hlcd);
+  InitGameEngine();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
