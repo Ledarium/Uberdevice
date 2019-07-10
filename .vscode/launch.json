@@ -1,0 +1,32 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "openocd",
+            "request": "launch",
+            "type": "cortex-debug",
+            "cwd": "${workspaceRoot}",
+            "servertype": "openocd",
+            "executable": "build/uberdevice.elf",
+            "svdFile": "target/STM32F103xx.svd",
+            "configFiles": [
+                "target/stlink.cfg",
+                "target/stm32f1x.cfg"
+            ],
+            "swoConfig": {
+                "source": "probe",
+                "enabled": true,
+                "swoFrequency": 4000000,
+                "cpuFrequency": 48000000,
+                "decoders": [
+                        {
+                                "port": 0,
+                                "label": "Output",
+                                "type": "console",
+                                "encoding":"ascii"                                                                                              
+                        }
+                ]
+            }
+        }
+    ]
+}

@@ -1,0 +1,4 @@
+{
+    "cortex-debug.armToolchainPath": "C:/GNU MCU Eclipse/ARM Embedded GCC/bin/",
+    "cortex-debug.openocdPath": "C:/GNU MCU Eclipse/OpenOCD/bin/openocd.exe"
+}

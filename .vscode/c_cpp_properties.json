@@ -1,0 +1,23 @@
+{
+    "configurations": [
+        {
+            "name": "Win",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/GNU MCU Eclipse/ARM Embedded GCC/**"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE",
+                "USE_HAL_DRIVER",
+                "STM32F103xB"
+            ],
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "gcc-x64",
+            "compilerPath": "C:/GNU MCU Eclipse/ARM Embedded GCC/bin/arm-none-eabi-gcc.exe"
+        }
+    ],
+    "version": 4
+}
