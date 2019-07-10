@@ -91,7 +91,7 @@
 #define configSUPPORT_DYNAMIC_ALLOCATION			1
 #define configTOTAL_HEAP_SIZE		                ( ( size_t ) ( 10 * 1024 ) )
 #define configAPPLICATION_ALLOCATED_HEAP			0
-#define configCHECK_FOR_STACK_OVERFLOW				2
+#define configCHECK_FOR_STACK_OVERFLOW				0
 
 /* Software timer related definitions. */
 #define configUSE_TIMERS							1

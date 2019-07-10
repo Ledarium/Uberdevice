@@ -444,8 +444,6 @@ void vTaskPlayerSetup(void *parameter)
 		{
 			RemovePlayer();
 		}
-		
-		if (game.activePlayers > 1 && bigButton)
 			break;
 		
 		vTaskDelay(5);
@@ -471,14 +469,6 @@ void vTaskTimerSetup(void *parameter) {
 			break;
 		}
 		vTaskDelay(10);
-		
-#ifdef DEBUG
-		auto [minutes, seconds] = game.GetTimerValue();
-		buffer[0] = minutes;
-		buffer[1] = seconds;
-		usart.Send();
-#endif // DEBUG
-		
 	}
 
 	secondsTimerHandle = xTimerCreate("SecondsTimer",
@@ -488,7 +478,7 @@ void vTaskTimerSetup(void *parameter) {
 		vTimerCallback // function to call after timer expires
 		); 
 
-	xTaskCreate(vTaskConfig, "Config", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate(vTaskPlayerSetup, "Setup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	vTaskDelete(NULL);
 }
 
@@ -584,11 +574,6 @@ void vTaskTurnEnd(void *parameter) {
 	vTaskDelete(NULL);
 }
 
-void vTimerCallback(TimerHandle_t xTimer) {
-	if (game.timerValue > 0)
-		game.timerValue--;
-}
-
 void vTaskOvertime(void *parameter) {
 	while (1)
 	{
@@ -599,7 +584,33 @@ void vTaskOvertime(void *parameter) {
 	}
 }
  */
+void vTimerCallback(TimerHandle_t xTimer) {
+	if (game.timerValue > 0)
+		game.timerValue--;
+}
+
 /* USER CODE END 4 */
+
+/**
+  * @brief  Period elapsed callback in non blocking mode
+  * @note   This function is called  when TIM4 interrupt took place, inside
+  * HAL_TIM_IRQHandler(). It makes a direct call to HAL_IncTick() to increment
+  * a global variable "uwTick" used as application time base.
+  * @param  htim : TIM handle
+  * @retval None
+  */
+void HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *htim)
+{
+  /* USER CODE BEGIN Callback 0 */
+
+  /* USER CODE END Callback 0 */
+  if (htim->Instance == TIM4) {
+    HAL_IncTick();
+  }
+  /* USER CODE BEGIN Callback 1 */
+
+  /* USER CODE END Callback 1 */
+}
 
 /**
   * @brief  This function is executed in case of error occurrence.
