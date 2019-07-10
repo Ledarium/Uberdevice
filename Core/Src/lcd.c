@@ -1,6 +1,8 @@
 #ifndef __LCD_H
 #define __LCD_H
 #include "lcd.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 #define LCD_COLS 20
 
@@ -79,7 +81,7 @@ HAL_StatusTypeDef LCD_SendInternal(LCD_HandleTypeDef *lcd, uint8_t data, uint8_t
 
     res = HAL_I2C_Master_Transmit(lcd->I2C_Handle, lcd->address, data_arr,
                                   sizeof(data_arr), HAL_MAX_DELAY);
-    HAL_Delay(LCD_DELAY_MS);
+    vTaskDelay(LCD_DELAY_MS);
     return res;
 }
 

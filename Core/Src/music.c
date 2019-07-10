@@ -142,7 +142,6 @@ RET_CODE MusicPlay(Track *track) {
         wait before processing the next command.  For example, 07 D0
         would cause a delay of 0x07d0 = 2000 decimal millisconds, or 2 seconds.  Any tones
         that were playing before the delay command will continue to play.*/
-        uint8_t byte = melody[i];
             if ((melody[i] >> 7) == 0) {
                 uint32_t delay = (melody[i] << 8) + melody[i + 1];
                 vTaskDelayUntil(&xLastWakeTime, delay);

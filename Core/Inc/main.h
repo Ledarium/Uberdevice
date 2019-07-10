@@ -61,11 +61,10 @@ void Error_Handler(void);
 void vTaskLed(void *parameter);
 void vTaskButton(void *parameter);
 void vTaskDisplay(void *parameter);
+void vTaskButtonPoll(void *parameter);
 
 void vTaskBeep(void *parameter);
 void vTaskOvertime(void *parameter);
-
-void vTaskStateMachine(void *parameter);
 
 void vTaskPlayerSetup(void *parameter);
 void vTaskConfig(void *parameter);

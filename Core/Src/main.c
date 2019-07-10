@@ -38,6 +38,14 @@
 /* Private typedef -----------------------------------------------------------*/
 /* USER CODE BEGIN PTD */
 
+typedef struct {
+  bool temp;
+  bool pressed;
+  GPIO_TypeDef *port;
+  uint16_t pin;
+} Button;
+
+
 /* USER CODE END PTD */
 
 /* Private define ------------------------------------------------------------*/
@@ -45,6 +53,8 @@
 #define LCD_ADDR (0x27 << 1)
 #define LCD_COLS 20
 #define LCD_ROWS 4
+
+#define BUTTON_COUNT 3
 
 /* USER CODE END PD */
 
@@ -71,9 +81,25 @@ LCD_HandleTypeDef hlcd = {
     LCD_ROWS,
     LCD_COLS
 };
-bool plusButton = false;
-bool minusButton = false;
-bool bigButton = false;
+Button buttons[BUTTON_COUNT] = { {
+  .temp = false,
+  .pressed = false,
+  .port = BigButton_GPIO_Port,
+  .pin = BigButton_Pin
+}, {
+  .temp = false,
+  .pressed = false,
+  .port = PlusButton_GPIO_Port,
+  .pin = PlusButton_Pin
+}, {
+  .temp = false,
+  .pressed = false,
+  .port = MinusButton_GPIO_Port,
+  .pin = MinusButton_Pin
+} };
+Button *plusButton = &buttons[1];
+Button *minusButton = &buttons[2];
+Button *bigButton = &buttons[0];
 
 TimerHandle_t secondsTimerHandle = NULL;
 TaskHandle_t xMusicHandle = NULL;
@@ -154,6 +180,7 @@ int main(void)
   InitGameEngine();
 
 	xTaskCreate(vTaskPlayerSetup, "Player", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate(vTaskButtonPoll, "Buttons", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	vTaskStartScheduler();
   /* USER CODE END 2 */
 
@@ -459,13 +486,13 @@ static void MX_GPIO_Init(void)
 
 void vTaskPlayerSetup(void *parameter)
 {
-	while (1)
+  while (1)
 	{
-		if (plusButton)
+		if (plusButton->pressed)
 		{
 			AddPlayer();
 		}
-		if (minusButton)
+		if (minusButton->pressed)
 		{
 			RemovePlayer();
 		}
@@ -480,17 +507,17 @@ void vTaskPlayerSetup(void *parameter)
 void vTaskTimerSetup(void *parameter) {
 	while (1)
 	{
-		if (plusButton)
+		if (plusButton->pressed)
 		{
 			IncrementTurnTime();
 		}
-		else if (minusButton)
+		else if (minusButton->pressed)
 		{
 			DecrementTurnTime();
 		}
 		else vTaskDelay(10);
 		
-		if (bigButton) {
+		if (bigButton->pressed) {
 			break;
 		}
 		vTaskDelay(10);
@@ -510,12 +537,12 @@ void vTaskTimerSetup(void *parameter) {
 void vTaskConfig(void *parameter) {
 	while (1)
 	{
-		if (plusButton)
+		if (plusButton->pressed)
 			game.countScores = !game.countScores;
-		if (minusButton)
+		if (minusButton->pressed)
 		// show round number or change the way it counts
 			game.countScores = !game.countScores;
-		if (bigButton) {
+		if (bigButton->pressed) {
 			break;
 		}
 		vTaskDelay(10);
@@ -532,15 +559,15 @@ void vTaskTurn(void *parameter) {
 	
 	while (1)
 	{
-		if (plusButton) {
+		if (plusButton->pressed) {
 			xTaskCreate(vTaskTimerSetup, "TaskTimerSetup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 			break;
 		}
-		else if (minusButton) {
+		else if (minusButton->pressed) {
 			xTaskCreate(vTaskConfig, "Config", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 			break;
 		}
-		else if (bigButton) {
+		else if (bigButton->pressed) {
 			xTaskCreate(vTaskTurnEnd, "TaskTurnEnd", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 			break;
 		} 
@@ -568,15 +595,15 @@ void vTaskTurnEnd(void *parameter) {
 	if (game.countScores) {
 		int32_t delta = 0;
 		while (1) {
-			if (bigButton) {
+			if (bigButton->pressed) {
 				ChangeScore(delta);
 				break;
 			}
-			else if (plusButton)
+			else if (plusButton->pressed)
 			{
 				delta++;
 			}
-			else if (minusButton)
+			else if (minusButton->pressed)
 			{
 				delta--;
 			}
@@ -607,6 +634,23 @@ void vTimerCallback(TimerHandle_t xTimer) {
 		game.timerValue--;
 }
 
+void vTaskButtonPoll(void *parameter) {
+  while (1) {
+    for(int i = 0; i<BUTTON_COUNT; i++)
+    {
+      bool state = HAL_GPIO_ReadPin(buttons[i].port, buttons[i].pin);
+      if (state && !buttons[i].temp)
+        buttons[i].temp = true;
+      else if (state && buttons[i].temp)
+        buttons[i].pressed = true;
+      else if (!state && buttons[i].pressed)
+        buttons[i].temp = false;
+      else if (!state && !buttons[i].temp)
+        buttons[i].pressed = false;
+    }
+    vTaskDelay(50);
+  }
+}
 /* USER CODE END 4 */
 
 /**
