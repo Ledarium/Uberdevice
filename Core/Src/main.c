@@ -24,9 +24,13 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#include <stdlib.h>
 #include "lcd.h"
 #include "game.h"
-#include <stdlib.h>
+#include "FreeRTOS.h"
+#include "task.h" 
+#include "queue.h"
+#include "timers.h"
 
 /* USER CODE END Includes */
 
@@ -426,7 +430,194 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
+void logic()
+{
+	led1.SetHigh();
+	usart.Send();
+	xTaskCreate(vTaskLed, "LED", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+//	xTaskCreate(vTaskStateMachine, "FSM", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate(vTaskPlayerSetup, "Player", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	vTaskStartScheduler();
+	
+	while(1) {
+	
+	};
+}
 
+void vTaskPlayerSetup(void *parameter)
+{
+	while (1)
+	{
+		if (plusButton.PressedDebounced())
+		{
+			game.AddPlayer();
+		}
+		if (minusButton.PressedDebounced())
+		{
+			game.RemovePlayer();
+		}
+		
+#ifdef DEBUG
+		for (auto i = 0; i < game.maxPlayers; i++)
+			buffer[i] = game.playerScore[i];
+		usart.Send();
+#endif // DEBUG
+		
+		
+		if (game.activePlayers > 1 && bigButton.PressedDebounced())
+			break;
+		
+		vTaskDelay(5);
+	}
+	xTaskCreate(vTaskTimerSetup, "TaskTimerSetup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	vTaskDelete(NULL);
+}
+
+void vTaskTimerSetup(void *parameter) {
+	while (1)
+	{
+		if (plusButton.PressedDebounced())
+		{
+			game.IncrementTurnTime();
+		}
+		else if (minusButton.PressedDebounced())
+		{
+			game.DecrementTurnTime();
+		}
+		else vTaskDelay(10);
+		
+		if (bigButton.PressedDebounced()) {
+			break;
+		}
+		vTaskDelay(10);
+		
+#ifdef DEBUG
+		auto [minutes, seconds] = game.GetTimerValue();
+		buffer[0] = minutes;
+		buffer[1] = seconds;
+		usart.Send();
+#endif // DEBUG
+		
+	}
+
+	secondsTimerHandle = xTimerCreate("SecondsTimer",
+		pdMS_TO_TICKS(1000), //counts 1 sec
+		pdTRUE, //auto-reload
+		NULL, //not assigning ID 
+		vTimerCallback // function to call after timer expires
+		); 
+
+	xTaskCreate(vTaskConfig, "Config", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	vTaskDelete(NULL);
+}
+
+void vTaskConfig(void *parameter) {
+	while (1)
+	{
+		if (plusButton.PressedDebounced())
+			game.countScores = !game.countScores;
+		if (minusButton.PressedDebounced())
+		// show round number or change the way it counts
+			game.countScores = !game.countScores;
+		if (bigButton.PressedDebounced()) {
+			break;
+		}
+		vTaskDelay(10);
+	}
+	xTaskCreate(vTaskTurn, "TaskTurn", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	vTaskDelete(NULL);
+}
+
+/*
+void vTaskTurn(void *parameter) {
+	xTimerReset(secondsTimerHandle, 0);
+	
+	TickType_t xLastWakeTime;
+	xLastWakeTime = xTaskGetTickCount();
+	
+	while (1)
+	{
+		if (plusButton.PressedDebounced()) {
+			xTaskCreate(vTaskTimerSetup, "TaskTimerSetup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+			break;
+		}
+		else if (minusButton.PressedDebounced()) {
+			xTaskCreate(vTaskConfig, "Config", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+			break;
+		}
+		else if (bigButton.PressedDebounced()) {
+			xTaskCreate(vTaskTurnEnd, "TaskTurnEnd", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+			break;
+		} 
+		
+		else if(game.timerValue == 0 && xMusicHandle == NULL) 
+		{
+			xTaskCreate(vTaskOvertime, "vTaskOvertime", configMINIMAL_STACK_SIZE, NULL, 1, &xMusicHandle);
+		}
+		vTaskDelayUntil(&xLastWakeTime,100);
+		led2.Toggle();
+		
+#ifdef DEBUG
+		auto[minutes, seconds] = game.GetTimerValue();
+		buffer[0] = minutes;
+		buffer[1] = seconds;
+		buffer[2] = game.currentPlayer;
+		buffer[4] = game.playerScore[0];
+		buffer[5] = game.playerScore[1];
+		buffer[6] = game.playerScore[2];
+		usart.Send();
+#endif // DEBUG
+		
+	}
+	xTimerStop(secondsTimerHandle, 0);
+	game.ResetTurnTimer();
+	if (xMusicHandle) {
+		vTaskDelete(xMusicHandle);
+		mp.Stop();
+		xMusicHandle = NULL;
+	}
+	vTaskDelete(NULL);
+}
+
+void vTaskTurnEnd(void *parameter) {
+	if (game.countScores) {
+		int32_t delta = 0;
+		while (1) {
+			if (bigButton.PressedDebounced()) {
+				game.ChangeScore(delta);
+				break;
+			}
+			else if (plusButton.PressedDebounced())
+			{
+				delta++;
+			}
+			else if (minusButton.PressedDebounced())
+			{
+				delta--;
+			}
+			vTaskDelay(10);
+		}
+	}
+	game.NextPlayer();
+	xTaskCreate(vTaskTurn, "TaskTurn", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	vTaskDelete(NULL);
+}
+
+void vTimerCallback(TimerHandle_t xTimer) {
+	if (game.timerValue > 0)
+		game.timerValue--;
+}
+
+void vTaskOvertime(void *parameter) {
+	while (1)
+	{
+		led2.SetHigh();
+		mp.Play(tracks[3]);
+		led2.SetLow();
+		vTaskDelay(1000);
+	}
+}
+ */
 /* USER CODE END 4 */
 
 /**
