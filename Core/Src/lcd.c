@@ -2,7 +2,7 @@
 
 #define LCD_COLS 20
 
-#define LCD_DELAY_MS 5
+#define LCD_DELAY_MS 2
 
 // commands
 #define LCD_CLEARDISPLAY 0x01
@@ -47,10 +47,12 @@
 #define LCD_NOBACKLIGHT 0x00
 
 //moving 
-#define LCD_LINE1 0x00
-#define LCD_LINE2 0x40
-#define LCD_LINE3 0x14
-#define LCD_LINE4 0x54
+const uint8_t LINE_BEGIN[4] = {
+    0x00,
+    0x40,
+    0x14,
+    0x54
+};
 
 #define LCD_PIN_EN 0b00000100  // Enable bit
 #define LCD_PIN_RW 0b00000010  // Read/Write bit
@@ -80,28 +82,38 @@ HAL_StatusTypeDef LCD_SendInternal(LCD_HandleTypeDef *lcd, uint8_t data, uint8_t
 }
 
 void LCD_SendCommand(LCD_HandleTypeDef *lcd, uint8_t cmd) {
-    LCD_SendInternal(lcd->address, cmd, 0);
+    LCD_SendInternal(lcd, cmd, 0);
 }
 
 void LCD_SendData(LCD_HandleTypeDef *lcd, uint8_t data) {
-    LCD_SendInternal(lcd->address, data, LCD_PIN_RS);
+    LCD_SendInternal(lcd, data, LCD_PIN_RS);
+}
+
+void LCD_MoveCursor(LCD_HandleTypeDef *lcd, uint8_t line, uint8_t column) {
+    if (line < lcd->rows && column < lcd->cols)
+        LCD_SendCommand(lcd, LCD_SETDDRAMADDR | (LINE_BEGIN[line] + column) );
 }
 
 void LCD_Init(LCD_HandleTypeDef *lcd) {
     //http://easyelectronics.ru/avr-uchebnyj-kurs-podklyuchenie-k-avr-lcd-displeya-hd44780.html
 
-    LCD_SendCommand(lcd->address, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_MULTILINE | LCD_5x8DOTS); // 0b00110000);
+    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_MULTILINE | LCD_5x8DOTS); // 0b00110000);
     // display & cursor home (keep this!)
-    LCD_SendCommand(lcd->address, LCD_RETURNHOME);
+    LCD_SendCommand(lcd, LCD_RETURNHOME);
     // display on, right shift, underline off, blink off
-    LCD_SendCommand(lcd->address, LCD_DISPLAYCONTROL|LCD_DISPLAYON|LCD_CURSOROFF|LCD_BLINKOFF); // 0b00001100);
+    LCD_SendCommand(lcd, LCD_DISPLAYCONTROL|LCD_DISPLAYON|LCD_CURSOROFF|LCD_BLINKOFF); // 0b00001100);
     // clear display (optional here)
-    LCD_SendCommand(lcd->address, LCD_CLEARDISPLAY);
+    LCD_SendCommand(lcd, LCD_CLEARDISPLAY);
+}
+
+void LCD_SendChar(LCD_HandleTypeDef *lcd,  char chr) {
+    if (chr)
+        LCD_SendData(lcd, (uint8_t)(chr));
 }
 
 void LCD_SendString(LCD_HandleTypeDef *lcd,  char *str) {
     while(*str) {
-        LCD_SendData(lcd->address, (uint8_t)(*str));
+        LCD_SendData(lcd, (uint8_t)(*str));
         str++;
     }
 }
