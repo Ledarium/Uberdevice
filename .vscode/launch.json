@@ -7,7 +7,7 @@
             "type": "cortex-debug",
             "cwd": "${workspaceRoot}",
             "servertype": "openocd",
-            "executable": "build/uberdevice.elf",
+            "executable": "build/${workspaceFolderBasename}.elf",
             "svdFile": "target/STM32F103xx.svd",
             "configFiles": [
                 "target/stlink.cfg",
