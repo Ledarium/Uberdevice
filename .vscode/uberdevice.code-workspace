@@ -3,5 +3,12 @@
 		{
 			"path": "D:\\Folders\\Documents\\STM32\\Uberdevice"
 		}
-	]
+	],
+	"settings": {
+		"files.associations": {
+			"task.h": "c",
+			"music.h": "c",
+			"usb_device.h": "c"
+		}
+	}
 }

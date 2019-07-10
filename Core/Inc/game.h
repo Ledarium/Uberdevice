@@ -16,8 +16,6 @@ typedef struct {
 	uint32_t scores[MAX_PLAYERS];
 } GameEngine;
 
-extern GameEngine game;
-
 void InitGameEngine();
 void IncrementTurnTime();
 void DecrementTurnTime();

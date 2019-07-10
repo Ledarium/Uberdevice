@@ -1,5 +1,7 @@
 #include "game.h"
 
+extern GameEngine game;
+
 void InitGameEngine() {
     game.timerValue = game.turnTime;
 	game.countScores = false;

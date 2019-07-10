@@ -46,6 +46,7 @@ Middlewares/FreeRTOS/Src/croutine.c \
 Middlewares/FreeRTOS/Src/queue.c \
 Middlewares/FreeRTOS/Src/timers.c \
 Core/Src/main.c \
+Core/Src/music.c \
 Core/Src/lcd.c \
 Core/Src/game.c \
 Core/Src/stm32f1xx_it.c \
@@ -133,6 +134,7 @@ AS_INCLUDES =
 
 # C includes
 C_INCLUDES =  \
+-IMiddlewares/FreeRTOS/Inc \
 -IUSB_DEVICE/App \
 -IUSB_DEVICE/Target \
 -ICore/Inc \
@@ -141,7 +143,6 @@ C_INCLUDES =  \
 -IMiddlewares/ST/STM32_USB_Device_Library/Core/Inc \
 -IMiddlewares/ST/STM32_USB_Device_Library/Class/CDC/Inc \
 -IDrivers/CMSIS/Device/ST/STM32F1xx/Include \
--IMiddlewares/FreeRTOS/Inc \
 -IDrivers/CMSIS/Include
 
 

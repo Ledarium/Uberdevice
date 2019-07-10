@@ -25,6 +25,14 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 
+#include <stdlib.h>
+#include "stm32f1xx_hal_gpio.h"
+#include "lcd.h"
+#include "game.h"
+#include "task.h" 
+#include "queue.h"
+#include "music.h"
+
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -42,7 +50,6 @@
 
 /* Private macro -------------------------------------------------------------*/
 /* USER CODE BEGIN PM */
-
 /* USER CODE END PM */
 
 /* Private variables ---------------------------------------------------------*/
@@ -68,8 +75,25 @@ bool plusButton = false;
 bool minusButton = false;
 bool bigButton = false;
 
-static TimerHandle_t secondsTimerHandle = NULL;
-static TaskHandle_t xMusicHandle = NULL;
+TimerHandle_t secondsTimerHandle = NULL;
+TaskHandle_t xMusicHandle = NULL;
+
+asm(
+"tetris:\n\t"
+".incbin \"../../Resources/tetris.bin\"\n\t" // используем директиву .incbin
+"tetris_len:\n\t"
+".long .-tetris\n\t"  // вставляем значение .long с вычисленной длиной файла
+);
+extern uint8_t *tetris;
+extern uint32_t tetris_len;
+asm(
+"super_mario:\n\t"
+".incbin \"../../Resources/super_mario.bin\"\n\t" // используем директиву .incbin
+"super_mario_len:\n\t"
+".long .-super_mario\n\t"  // вставляем значение .long с вычисленной длиной файла
+);
+extern uint8_t *super_mario;
+extern uint32_t super_mario_len;
 
 /* USER CODE END PV */
 
@@ -479,7 +503,7 @@ void vTaskTimerSetup(void *parameter) {
 		vTimerCallback // function to call after timer expires
 		); 
 
-	xTaskCreate(vTaskPlayerSetup, "Setup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate(vTaskConfig, "Config", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	vTaskDelete(NULL);
 }
 
@@ -565,10 +589,14 @@ void vTaskTurnEnd(void *parameter) {
 }
 
 void vTaskOvertime(void *parameter) {
+  Track music[2] = {
+    { .begin = tetris, .size = tetris_len},
+    { .begin = super_mario, .size = super_mario_len}
+  };
 	while (1)
 	{
 		HAL_GPIO_WritePin(LED2_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
-		MusicPlay();
+		MusicPlay(&music[0]);
 		HAL_GPIO_WritePin(LED2_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
 		vTaskDelay(1000);
 	}
