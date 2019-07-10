@@ -56,7 +56,6 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-extern PCD_HandleTypeDef hpcd_USB_FS;
 extern DMA_HandleTypeDef hdma_i2c1_tx;
 extern DMA_HandleTypeDef hdma_usart1_tx;
 extern TIM_HandleTypeDef htim4;
@@ -141,6 +140,21 @@ void UsageFault_Handler(void)
   }
 }
 
+
+/**
+  * @brief This function handles Debug monitor.
+  */
+void DebugMon_Handler(void)
+{
+  /* USER CODE BEGIN DebugMonitor_IRQn 0 */
+
+  /* USER CODE END DebugMonitor_IRQn 0 */
+  /* USER CODE BEGIN DebugMonitor_IRQn 1 */
+
+  /* USER CODE END DebugMonitor_IRQn 1 */
+}
+
+
 /******************************************************************************/
 /* STM32F1xx Peripheral Interrupt Handlers                                    */
 /* Add here the Interrupt Handlers for the used peripherals.                  */
@@ -174,20 +188,6 @@ void DMA1_Channel6_IRQHandler(void)
   /* USER CODE BEGIN DMA1_Channel6_IRQn 1 */
 
   /* USER CODE END DMA1_Channel6_IRQn 1 */
-}
-
-/**
-  * @brief This function handles USB low priority or CAN RX0 interrupts.
-  */
-void USB_LP_CAN1_RX0_IRQHandler(void)
-{
-  /* USER CODE BEGIN USB_LP_CAN1_RX0_IRQn 0 */
-
-  /* USER CODE END USB_LP_CAN1_RX0_IRQn 0 */
-  HAL_PCD_IRQHandler(&hpcd_USB_FS);
-  /* USER CODE BEGIN USB_LP_CAN1_RX0_IRQn 1 */
-
-  /* USER CODE END USB_LP_CAN1_RX0_IRQn 1 */
 }
 
 /**
