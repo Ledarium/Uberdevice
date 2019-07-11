@@ -13,7 +13,7 @@ typedef struct {
 	uint8_t currentPlayer;
 	uint32_t turnTime;
 	uint32_t timerValue;
-	uint32_t scores[MAX_PLAYERS];
+	uint32_t scores[MAX_PLAYERS+1];
 } GameEngine;
 
 void InitGameEngine();

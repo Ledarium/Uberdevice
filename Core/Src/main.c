@@ -25,12 +25,14 @@
 /* USER CODE BEGIN Includes */
 
 #include <stdlib.h>
+#include <string.h>
 #include "stm32f1xx_hal_gpio.h"
 #include "lcd.h"
 #include "game.h"
 #include "task.h" 
 #include "queue.h"
 #include "music.h"
+#include "semphr.h"
 
 /* USER CODE END Includes */
 
@@ -38,12 +40,10 @@
 /* USER CODE BEGIN PTD */
 
 typedef struct {
-  bool temp;
   bool pressed;
   GPIO_TypeDef *port;
   uint16_t pin;
 } Button;
-
 
 /* USER CODE END PTD */
 
@@ -71,6 +71,7 @@ UART_HandleTypeDef huart1;
 
 /* USER CODE BEGIN PV */
 
+xSemaphoreHandle buttonPressed;
 GameEngine game;
 LCD_HandleTypeDef hlcd = { 
     &hi2c1,
@@ -78,19 +79,16 @@ LCD_HandleTypeDef hlcd = {
     LCD_ROWS,
     LCD_COLS
 };
-char lcdBuffer[LCD_COLS];
+char lcdBuffer[LCD_COLS+1];
 Button buttons[BUTTON_COUNT] = { {
-  .temp = false,
   .pressed = false,
   .port = BigButton_GPIO_Port,
   .pin = BigButton_Pin
 }, {
-  .temp = false,
   .pressed = false,
   .port = PlusButton_GPIO_Port,
   .pin = PlusButton_Pin
 }, {
-  .temp = false,
   .pressed = false,
   .port = MinusButton_GPIO_Port,
   .pin = MinusButton_Pin
@@ -455,28 +453,35 @@ static void MX_GPIO_Init(void)
 
 void vTaskPlayerSetup(void *parameter)
 {
+  vTaskDelay(50);
   LCD_Init(&hlcd);
+  vTaskDelay(50);
   LCD_MoveCursor(&hlcd, 0, 0);
   LCD_SendString(&hlcd, "Settings");
   LCD_MoveCursor(&hlcd, 1, 0);
-  LCD_SendString(&hlcd, "Players:");
   while (1)
 	{
-		if (plusButton->pressed)
-		{
-			AddPlayer();
-		}
-		if (minusButton->pressed)
-		{
-			RemovePlayer();
-		}
-		if (bigButton->pressed)
+    LCD_MoveCursor(&hlcd, 1, 0);
+    sprintf(lcdBuffer, "Players: %d          ", game.activePlayers);
+    LCD_SendString(&hlcd, lcdBuffer);
+    vTaskDelay(1);
+    if (xSemaphoreTake(buttonPressed, portMAX_DELAY) == pdPASS )
     {
-			break;
+      if (plusButton->pressed)
+      {
+        plusButton->pressed = false;
+        AddPlayer();
+      }
+      else if (minusButton->pressed)
+      {
+        minusButton->pressed = false;
+        RemovePlayer();
+      }
+      else if (bigButton->pressed)
+      {
+        break;
+      }
     }
-    LCD_MoveCursor(&hlcd, 1, 9);
-    LCD_SendChar(&hlcd, game.activePlayers+'0');
-		vTaskDelay(5);
 	}
 	xTaskCreate(vTaskTimerSetup, "TaskTimerSetup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	vTaskDelete(NULL);
@@ -485,25 +490,28 @@ void vTaskPlayerSetup(void *parameter)
 void vTaskTimerSetup(void *parameter) {
   LCD_MoveCursor(&hlcd, 0, 0);
   LCD_SendString(&hlcd, "Settings");
-  LCD_MoveCursor(&hlcd, 1, 0);
-  LCD_SendString(&hlcd, "Turn time:");
 	while (1)
 	{
-		if (plusButton->pressed)
-		{
-			IncrementTurnTime();
-		}
-		else if (minusButton->pressed)
-		{
-			DecrementTurnTime();
-		}
-		else if (bigButton->pressed) {
-			break;
-		}
-    LCD_MoveCursor(&hlcd, 1, 11);
-    itoa(game.turnTime, lcdBuffer, 10);
+    LCD_MoveCursor(&hlcd, 1, 0);
+    sprintf(lcdBuffer, "Turn time: %3ld s    ", game.turnTime);
     LCD_SendString(&hlcd, lcdBuffer);
-		vTaskDelay(10);
+    vTaskDelay(1);
+    if (xSemaphoreTake(buttonPressed, portMAX_DELAY) == pdPASS )
+    {
+      if (plusButton->pressed)
+      {
+        plusButton->pressed = false;
+        IncrementTurnTime();
+      }
+      else if (minusButton->pressed)
+      {
+        minusButton->pressed = false;
+        DecrementTurnTime();
+      }
+      else if (bigButton->pressed) {
+        break;
+      }
+    }
 	}
 
 	secondsTimerHandle = xTimerCreate("SecondsTimer",
@@ -518,17 +526,25 @@ void vTaskTimerSetup(void *parameter) {
 }
 
 void vTaskConfig(void *parameter) {
+  LCD_MoveCursor(&hlcd, 0, 0);
+  LCD_SendString(&hlcd, "Settings");
 	while (1)
 	{
-		if (plusButton->pressed)
-			game.countScores = !game.countScores;
-		if (minusButton->pressed)
-		// show round number or change the way it counts
-			game.countScores = !game.countScores;
-		if (bigButton->pressed) {
-			break;
-		}
-		vTaskDelay(10);
+    LCD_MoveCursor(&hlcd, 1, 0);
+    sprintf(lcdBuffer, "Count scores: %3s   ", game.countScores ? "yes" : "no");
+    LCD_SendString(&hlcd, lcdBuffer);
+    vTaskDelay(1);
+    if (xSemaphoreTake(buttonPressed, portMAX_DELAY) == pdPASS ) {
+      if (plusButton->pressed)
+        game.countScores = !game.countScores;
+      if (minusButton->pressed)
+      // show round number or change the way it counts
+        game.countScores = !game.countScores;
+      if (bigButton->pressed) {
+        break;
+      }
+      vTaskDelay(10);
+    }
 	}
 	xTaskCreate(vTaskTurn, "TaskTurn", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	vTaskDelete(NULL);
@@ -618,18 +634,21 @@ void vTimerCallback(TimerHandle_t xTimer) {
 }
 
 void vTaskButtonPoll(void *parameter) {
+  buttonPressed = xSemaphoreCreateBinary();
+  bool state = false;
   while (1) {
     for(int i = 0; i<BUTTON_COUNT; i++)
     {
-      bool state = HAL_GPIO_ReadPin(buttons[i].port, buttons[i].pin);
+      state = HAL_GPIO_ReadPin(buttons[i].port, buttons[i].pin);
       if (state != buttons[i].pressed)
       {
-        vTaskDelay(100);
+        vTaskDelay(50);
         state = HAL_GPIO_ReadPin(buttons[i].port, buttons[i].pin);
         if (state != buttons[i].pressed)
           buttons[i].pressed = !buttons[i].pressed;
+          xSemaphoreGive(buttonPressed);
       }
-      vTaskDelay(100);
+      vTaskDelay(25);
     }
   }
 }
