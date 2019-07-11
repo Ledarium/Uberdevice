@@ -455,9 +455,7 @@ static void MX_GPIO_Init(void)
 
 void vTaskPlayerSetup(void *parameter)
 {
-  vTaskDelay(500);
   LCD_Init(&hlcd);
-  vTaskDelay(100);
   LCD_MoveCursor(&hlcd, 0, 0);
   LCD_SendString(&hlcd, "Settings");
   LCD_MoveCursor(&hlcd, 1, 0);
@@ -624,17 +622,15 @@ void vTaskButtonPoll(void *parameter) {
     for(int i = 0; i<BUTTON_COUNT; i++)
     {
       bool state = HAL_GPIO_ReadPin(buttons[i].port, buttons[i].pin);
-      vTaskDelay(1);
-      if (state && !buttons[i].temp)
-        buttons[i].temp = true;
-      else if (state && buttons[i].temp)
-        buttons[i].pressed = true;
-      else if (!state && !buttons[i].temp)
-        buttons[i].pressed = false;
-      else if (!state && buttons[i].pressed)
-        buttons[i].temp = false;
+      if (state != buttons[i].pressed)
+      {
+        vTaskDelay(100);
+        state = HAL_GPIO_ReadPin(buttons[i].port, buttons[i].pin);
+        if (state != buttons[i].pressed)
+          buttons[i].pressed = !buttons[i].pressed;
+      }
+      vTaskDelay(100);
     }
-    vTaskDelay(50);
   }
 }
 /* USER CODE END 4 */

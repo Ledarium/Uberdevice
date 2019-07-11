@@ -103,11 +103,15 @@ void LCD_Init(LCD_HandleTypeDef *lcd) {
     //http://nerdralph.blogspot.com/2014/07/controlling-hd44780-displays.html
     vTaskDelay(30);
     LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_8BITMODE);
-    vTaskDelay(1);
+    vTaskDelay(5);
     LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_8BITMODE);
-    vTaskDelay(1);
+    vTaskDelay(5);
     LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE);
     vTaskDelay(1);
+    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_SINGLELINE | LCD_5x8DOTS); // 0b00110000);
+    vTaskDelay(5);
+    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_SINGLELINE | LCD_5x8DOTS); // 0b00110000);
+    vTaskDelay(5);
     LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_MULTILINE | LCD_5x8DOTS); // 0b00110000);
     vTaskDelay(5);
     // display & cursor home (keep this!)
