@@ -78,6 +78,7 @@ LCD_HandleTypeDef hlcd = {
     LCD_ROWS,
     LCD_COLS
 };
+char lcdBuffer[LCD_COLS];
 Button buttons[BUTTON_COUNT] = { {
   .temp = false,
   .pressed = false,
@@ -423,7 +424,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin : BigButton_Pin */
   GPIO_InitStruct.Pin = BigButton_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(BigButton_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : PA4 PA5 PA6 PA8 
@@ -445,7 +446,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pins : MinusButton_Pin PlusButton_Pin */
   GPIO_InitStruct.Pin = MinusButton_Pin|PlusButton_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
 }
@@ -454,7 +455,13 @@ static void MX_GPIO_Init(void)
 
 void vTaskPlayerSetup(void *parameter)
 {
-  //LCD_Init(&hlcd);
+  vTaskDelay(500);
+  LCD_Init(&hlcd);
+  vTaskDelay(100);
+  LCD_MoveCursor(&hlcd, 0, 0);
+  LCD_SendString(&hlcd, "Settings");
+  LCD_MoveCursor(&hlcd, 1, 0);
+  LCD_SendString(&hlcd, "Players:");
   while (1)
 	{
 		if (plusButton->pressed)
@@ -465,8 +472,12 @@ void vTaskPlayerSetup(void *parameter)
 		{
 			RemovePlayer();
 		}
+		if (bigButton->pressed)
+    {
 			break;
-		
+    }
+    LCD_MoveCursor(&hlcd, 1, 9);
+    LCD_SendChar(&hlcd, game.activePlayers+'0');
 		vTaskDelay(5);
 	}
 	xTaskCreate(vTaskTimerSetup, "TaskTimerSetup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
@@ -474,6 +485,10 @@ void vTaskPlayerSetup(void *parameter)
 }
 
 void vTaskTimerSetup(void *parameter) {
+  LCD_MoveCursor(&hlcd, 0, 0);
+  LCD_SendString(&hlcd, "Settings");
+  LCD_MoveCursor(&hlcd, 1, 0);
+  LCD_SendString(&hlcd, "Turn time:");
 	while (1)
 	{
 		if (plusButton->pressed)
@@ -484,11 +499,12 @@ void vTaskTimerSetup(void *parameter) {
 		{
 			DecrementTurnTime();
 		}
-		else vTaskDelay(10);
-		
-		if (bigButton->pressed) {
+		else if (bigButton->pressed) {
 			break;
 		}
+    LCD_MoveCursor(&hlcd, 1, 11);
+    itoa(game.turnTime, lcdBuffer, 10);
+    LCD_SendString(&hlcd, lcdBuffer);
 		vTaskDelay(10);
 	}
 

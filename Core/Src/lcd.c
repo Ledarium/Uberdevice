@@ -100,14 +100,25 @@ void LCD_MoveCursor(LCD_HandleTypeDef *lcd, uint8_t line, uint8_t column) {
 
 void LCD_Init(LCD_HandleTypeDef *lcd) {
     //http://easyelectronics.ru/avr-uchebnyj-kurs-podklyuchenie-k-avr-lcd-displeya-hd44780.html
-
+    //http://nerdralph.blogspot.com/2014/07/controlling-hd44780-displays.html
+    vTaskDelay(30);
+    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_8BITMODE);
+    vTaskDelay(1);
+    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_8BITMODE);
+    vTaskDelay(1);
+    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE);
+    vTaskDelay(1);
     LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_MULTILINE | LCD_5x8DOTS); // 0b00110000);
+    vTaskDelay(5);
     // display & cursor home (keep this!)
     LCD_SendCommand(lcd, LCD_RETURNHOME);
+    vTaskDelay(5);
     // display on, right shift, underline off, blink off
     LCD_SendCommand(lcd, LCD_DISPLAYCONTROL|LCD_DISPLAYON|LCD_CURSOROFF|LCD_BLINKOFF); // 0b00001100);
+    vTaskDelay(5);
     // clear display (optional here)
     LCD_SendCommand(lcd, LCD_CLEARDISPLAY);
+    vTaskDelay(5);
 }
 
 void LCD_SendChar(LCD_HandleTypeDef *lcd,  char chr) {
