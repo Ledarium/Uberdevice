@@ -99,6 +99,7 @@ Button *bigButton = &buttons[0];
 
 TimerHandle_t secondsTimerHandle = NULL;
 TaskHandle_t xMusicHandle = NULL;
+TaskHandle_t xLCDUpdaterHandle = NULL;
 
 asm(
 "tetris:\n\t"
@@ -550,36 +551,72 @@ void vTaskConfig(void *parameter) {
 	vTaskDelete(NULL);
 }
 
-void vTaskTurn(void *parameter) {
-	xTimerReset(secondsTimerHandle, 0);
-
-  LCD_MoveHome(&hlcd);
-
+void vTaskTurnTimeUpdate(void *parameter) {
 	TickType_t xLastWakeTime;
 	xLastWakeTime = xTaskGetTickCount();
 	
 	while (1)
 	{
-		if (plusButton->pressed) {
-			xTaskCreate(vTaskTimerSetup, "TaskTimerSetup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-			break;
-		}
-		else if (minusButton->pressed) {
-			xTaskCreate(vTaskConfig, "Config", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-			break;
-		}
-		else if (bigButton->pressed) {
-			xTaskCreate(vTaskTurnEnd, "TaskTurnEnd", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-			break;
-		} 
-		
-		else if(game.timerValue == 0 && xMusicHandle == NULL) 
-		{
-			xTaskCreate(vTaskOvertime, "vTaskOvertime", configMINIMAL_STACK_SIZE, NULL, 1, &xMusicHandle);
-		}
-		vTaskDelayUntil(&xLastWakeTime,100);
+    LCD_MoveCursor(&hlcd, 0, 0);
+    sprintf(lcdBuffer, "        %1ld:%02ld        ",game.timerValue / 60, game.timerValue % 60);
+    LCD_SendString(&hlcd, lcdBuffer);
 
-		HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
+		vTaskDelayUntil(&xLastWakeTime,1000);
+  }
+}
+
+void vTaskTurn(void *parameter) {
+	xTaskCreate(vTaskTurnTimeUpdate, "TimeUpdate", configMINIMAL_STACK_SIZE, NULL, 1, &xLCDUpdaterHandle);
+  vTaskDelay(1);
+	TickType_t xLastWakeTime;
+	xLastWakeTime = xTaskGetTickCount();
+
+	xTimerReset(secondsTimerHandle, 0);
+  LCD_MoveHome(&hlcd);
+
+  if (game.countScores)
+  {
+    memset(&lcdBuffer,'\0', sizeof(lcdBuffer));
+    LCD_MoveCursor(&hlcd, 2, 1);
+    for (int i = 1; i <= game.activePlayers; i++)
+    {
+      char tmp[8];
+      sprintf(tmp, "%1d:%3ld|", i, game.scores[i]);
+      strcat(lcdBuffer, tmp);
+      if (strlen(lcdBuffer) > (LCD_COLS-6))
+      {
+        LCD_SendString(&hlcd, lcdBuffer);
+        memset(&lcdBuffer,'\0', sizeof(lcdBuffer));
+        LCD_MoveCursor(&hlcd, 3, 1);
+      }
+    }
+    LCD_SendString(&hlcd, lcdBuffer);
+    memset(&lcdBuffer,'\0', sizeof(lcdBuffer));
+  }
+
+  LCD_MoveCursor(&hlcd, 1, 0);
+  sprintf(lcdBuffer, "Player: %1d Score: %3ld",game.currentPlayer, game.scores[game.currentPlayer]);
+  LCD_SendString(&hlcd, lcdBuffer);
+
+  while (1)
+  {
+    if (xSemaphoreTake(buttonPressed, portMAX_DELAY) == pdPASS ) 
+    {
+      if (plusButton->pressed) {
+        xTaskCreate(vTaskTimerSetup, "TaskTimerSetup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+        break;
+      }
+      else if (minusButton->pressed) {
+        xTaskCreate(vTaskConfig, "Config", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+        break;
+      }
+      else if (bigButton->pressed) {
+        xTaskCreate(vTaskTurnEnd, "TaskTurnEnd", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+        break;
+      } 
+    }
+		vTaskDelayUntil(&xLastWakeTime,100);
+//  HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 	}
 	xTimerStop(secondsTimerHandle, 0);
 	ResetTurnTimer();
@@ -589,27 +626,39 @@ void vTaskTurn(void *parameter) {
 		MusicStop();
 		xMusicHandle = NULL;
 	}
+	vTaskDelete(xLCDUpdaterHandle);
 	vTaskDelete(NULL);
 }
 
 void vTaskTurnEnd(void *parameter) {
 	if (game.countScores) {
 		int32_t delta = 0;
+    LCD_MoveHome(&hlcd);
+    LCD_MoveCursor(&hlcd, 1, 0);
+    sprintf(lcdBuffer, "Player: %1d Score: %3ld",game.currentPlayer, game.scores[game.currentPlayer]);
+    LCD_SendString(&hlcd, lcdBuffer);
 		while (1) {
-			if (bigButton->pressed) {
-				ChangeScore(delta);
-				break;
-			}
-			else if (plusButton->pressed)
-			{
-				delta++;
-			}
-			else if (minusButton->pressed)
-			{
-				delta--;
-			}
-			vTaskDelay(10);
-		}
+      LCD_MoveCursor(&hlcd, 2, 0);
+      sprintf(lcdBuffer, "Result: %+4ld", delta);
+      LCD_SendString(&hlcd, lcdBuffer);
+      if (xSemaphoreTake(buttonPressed, portMAX_DELAY) == pdPASS ) {
+        if (bigButton->pressed) {
+          ChangeScore(delta);
+          break;
+        }
+        else if (plusButton->pressed)
+        {
+          plusButton->pressed = false;
+          delta++;
+        }
+        else if (minusButton->pressed)
+        {
+          minusButton->pressed = false;
+          delta--;
+        }
+        vTaskDelay(10);
+      }
+    }
   }
 	NextPlayer();
 	xTaskCreate(vTaskTurn, "TaskTurn", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
@@ -633,6 +682,10 @@ void vTaskOvertime(void *parameter) {
 void vTimerCallback(TimerHandle_t xTimer) {
 	if (game.timerValue > 0)
 		game.timerValue--;
+  else if(game.timerValue == 0 && xMusicHandle == NULL) 
+  {
+    xTaskCreate(vTaskOvertime, "vTaskOvertime", configMINIMAL_STACK_SIZE, NULL, 1, &xMusicHandle);
+  } 
 }
 
 void vTaskButtonPoll(void *parameter) {

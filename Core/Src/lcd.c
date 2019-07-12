@@ -101,6 +101,7 @@ void LCD_MoveCursor(LCD_HandleTypeDef *lcd, uint8_t line, uint8_t column) {
 void LCD_MoveHome(LCD_HandleTypeDef *lcd) {
     LCD_SendCommand(lcd, LCD_RETURNHOME );
     vTaskDelay(2);
+    LCD_SendCommand(lcd, LCD_CLEARDISPLAY);
 }
 
 void LCD_Init(LCD_HandleTypeDef *lcd) {

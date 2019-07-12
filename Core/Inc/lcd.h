@@ -18,5 +18,6 @@ void LCD_SendData(LCD_HandleTypeDef *lcd, uint8_t data);
 void LCD_Init(LCD_HandleTypeDef *lcd);
 void LCD_SendChar(LCD_HandleTypeDef *lcd,  char chr);
 void LCD_SendString(LCD_HandleTypeDef *lcd,  char *str);
+void LCD_MoveHome(LCD_HandleTypeDef *lcd);
 
 #endif

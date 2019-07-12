@@ -71,6 +71,7 @@ void vTaskConfig(void *parameter);
 void vTaskTimerSetup(void *parameter);
 void vTaskTurn(void *parameter);
 void vTaskTurnEnd(void *parameter);
+void vTaskTurnTimeUpdate(void *parameter);
 
 void vTimerCallback(TimerHandle_t xTimer);
 /* USER CODE END EFP */
