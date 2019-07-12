@@ -98,6 +98,11 @@ void LCD_MoveCursor(LCD_HandleTypeDef *lcd, uint8_t line, uint8_t column) {
         LCD_SendCommand(lcd, LCD_SETDDRAMADDR | (LINE_BEGIN[line] + column) );
 }
 
+void LCD_MoveHome(LCD_HandleTypeDef *lcd) {
+    LCD_SendCommand(lcd, LCD_RETURNHOME );
+    vTaskDelay(2);
+}
+
 void LCD_Init(LCD_HandleTypeDef *lcd) {
     //http://easyelectronics.ru/avr-uchebnyj-kurs-podklyuchenie-k-avr-lcd-displeya-hd44780.html
     //http://nerdralph.blogspot.com/2014/07/controlling-hd44780-displays.html

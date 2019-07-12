@@ -2,7 +2,7 @@
 #define __GAME_H
 #define MAX_PLAYERS 6
 #define TIMER_MAX 180
-#define TIMER_STEP 5
+#define TIMER_STEP 10
 
 #include <stdint.h>
 #include <stdbool.h>

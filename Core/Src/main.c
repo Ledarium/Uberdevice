@@ -456,13 +456,13 @@ void vTaskPlayerSetup(void *parameter)
   vTaskDelay(50);
   LCD_Init(&hlcd);
   vTaskDelay(50);
-  LCD_MoveCursor(&hlcd, 0, 0);
+  LCD_MoveHome(&hlcd);
   LCD_SendString(&hlcd, "Settings");
   LCD_MoveCursor(&hlcd, 1, 0);
   while (1)
 	{
     LCD_MoveCursor(&hlcd, 1, 0);
-    sprintf(lcdBuffer, "Players: %d          ", game.activePlayers);
+    sprintf(lcdBuffer, "Players: %1d          ", game.activePlayers);
     LCD_SendString(&hlcd, lcdBuffer);
     vTaskDelay(1);
     if (xSemaphoreTake(buttonPressed, portMAX_DELAY) == pdPASS )
@@ -477,7 +477,7 @@ void vTaskPlayerSetup(void *parameter)
         minusButton->pressed = false;
         RemovePlayer();
       }
-      else if (bigButton->pressed)
+      else if (bigButton->pressed && game.activePlayers > 1)
       {
         break;
       }
@@ -488,12 +488,12 @@ void vTaskPlayerSetup(void *parameter)
 }
 
 void vTaskTimerSetup(void *parameter) {
-  LCD_MoveCursor(&hlcd, 0, 0);
+  LCD_MoveHome(&hlcd);
   LCD_SendString(&hlcd, "Settings");
 	while (1)
 	{
     LCD_MoveCursor(&hlcd, 1, 0);
-    sprintf(lcdBuffer, "Turn time: %3ld s    ", game.turnTime);
+    sprintf(lcdBuffer, "Turn time: %1ld:%02ld     ",game.turnTime / 60, game.turnTime % 60);
     LCD_SendString(&hlcd, lcdBuffer);
     vTaskDelay(1);
     if (xSemaphoreTake(buttonPressed, portMAX_DELAY) == pdPASS )
@@ -526,7 +526,7 @@ void vTaskTimerSetup(void *parameter) {
 }
 
 void vTaskConfig(void *parameter) {
-  LCD_MoveCursor(&hlcd, 0, 0);
+  LCD_MoveHome(&hlcd);
   LCD_SendString(&hlcd, "Settings");
 	while (1)
 	{
@@ -552,7 +552,9 @@ void vTaskConfig(void *parameter) {
 
 void vTaskTurn(void *parameter) {
 	xTimerReset(secondsTimerHandle, 0);
-	
+
+  LCD_MoveHome(&hlcd);
+
 	TickType_t xLastWakeTime;
 	xLastWakeTime = xTaskGetTickCount();
 	
@@ -642,13 +644,13 @@ void vTaskButtonPoll(void *parameter) {
       state = HAL_GPIO_ReadPin(buttons[i].port, buttons[i].pin);
       if (state != buttons[i].pressed)
       {
-        vTaskDelay(50);
+        vTaskDelay(25);
         state = HAL_GPIO_ReadPin(buttons[i].port, buttons[i].pin);
         if (state != buttons[i].pressed)
           buttons[i].pressed = !buttons[i].pressed;
           xSemaphoreGive(buttonPressed);
       }
-      vTaskDelay(25);
+      vTaskDelay(50);
     }
   }
 }
