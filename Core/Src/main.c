@@ -129,6 +129,16 @@ static void MX_TIM3_Init(void);
 static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
+void PrintTime() {
+  LCD_MoveCursor(&hlcd, 0, 0);
+  sprintf(
+    lcdBuffer, 
+    (game.timerValue > 0 ? "        %1ld:%02d        " : "       -%ld:%02d        "),
+    abs(game.timerValue / 60), 
+    abs(game.timerValue % 60)
+  );
+  LCD_SendString(&hlcd, lcdBuffer);
+}
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -489,6 +499,11 @@ void vTaskPlayerSetup(void *parameter)
 }
 
 void vTaskTimerSetup(void *parameter) {
+  if (xLCDUpdaterHandle != NULL)
+  {
+    vTaskDelete(xLCDUpdaterHandle);
+    xLCDUpdaterHandle = NULL;
+  }
   LCD_MoveHome(&hlcd);
   LCD_SendString(&hlcd, "Settings");
 	while (1)
@@ -527,6 +542,11 @@ void vTaskTimerSetup(void *parameter) {
 }
 
 void vTaskConfig(void *parameter) {
+  if (xLCDUpdaterHandle != NULL)
+  {
+    vTaskDelete(xLCDUpdaterHandle);
+    xLCDUpdaterHandle = NULL;
+  }
   LCD_MoveHome(&hlcd);
   LCD_SendString(&hlcd, "Settings");
 	while (1)
@@ -557,17 +577,17 @@ void vTaskTurnTimeUpdate(void *parameter) {
 	
 	while (1)
 	{
-    LCD_MoveCursor(&hlcd, 0, 0);
-    sprintf(lcdBuffer, "        %1ld:%02ld        ",game.timerValue / 60, game.timerValue % 60);
-    LCD_SendString(&hlcd, lcdBuffer);
-
+    PrintTime();
 		vTaskDelayUntil(&xLastWakeTime,1000);
   }
 }
 
 void vTaskTurn(void *parameter) {
-	xTaskCreate(vTaskTurnTimeUpdate, "TimeUpdate", configMINIMAL_STACK_SIZE, NULL, 1, &xLCDUpdaterHandle);
-  vTaskDelay(1);
+  if (xLCDUpdaterHandle == NULL)
+  {
+    xTaskCreate(vTaskTurnTimeUpdate, "TimeUpdate", configMINIMAL_STACK_SIZE, NULL, 1, &xLCDUpdaterHandle);
+    vTaskDelay(100);
+  }
 	TickType_t xLastWakeTime;
 	xLastWakeTime = xTaskGetTickCount();
 
@@ -619,21 +639,25 @@ void vTaskTurn(void *parameter) {
 //  HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 	}
 	xTimerStop(secondsTimerHandle, 0);
-	ResetTurnTimer();
 
 	if (xMusicHandle) {
 		vTaskDelete(xMusicHandle);
 		MusicStop();
 		xMusicHandle = NULL;
 	}
-	vTaskDelete(xLCDUpdaterHandle);
 	vTaskDelete(NULL);
 }
 
 void vTaskTurnEnd(void *parameter) {
+  if (xLCDUpdaterHandle != NULL)
+  {
+    vTaskDelete(xLCDUpdaterHandle);
+    xLCDUpdaterHandle = NULL;
+  }
 	if (game.countScores) {
 		int32_t delta = 0;
     LCD_MoveHome(&hlcd);
+    PrintTime();
     LCD_MoveCursor(&hlcd, 1, 0);
     sprintf(lcdBuffer, "Player: %1d Score: %3ld",game.currentPlayer, game.scores[game.currentPlayer]);
     LCD_SendString(&hlcd, lcdBuffer);
@@ -660,12 +684,14 @@ void vTaskTurnEnd(void *parameter) {
       }
     }
   }
+  ResetTurnTimer();
 	NextPlayer();
 	xTaskCreate(vTaskTurn, "TaskTurn", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	vTaskDelete(NULL);
 }
 
 void vTaskOvertime(void *parameter) {
+  /*
   Track music[2] = {
     { .begin = tetris, .size = tetris_len},
     { .begin = super_mario, .size = super_mario_len}
@@ -676,13 +702,13 @@ void vTaskOvertime(void *parameter) {
 		MusicPlay(&music[0]);
 		HAL_GPIO_WritePin(LED2_GPIO_Port, LED1_Pin, GPIO_PIN_RESET);
 		vTaskDelay(1000);
-	}
+	} */
+	while (1) {};
 }
 
 void vTimerCallback(TimerHandle_t xTimer) {
-	if (game.timerValue > 0)
-		game.timerValue--;
-  else if(game.timerValue == 0 && xMusicHandle == NULL) 
+  game.timerValue--;
+  if(game.timerValue == 0 && xMusicHandle == NULL) 
   {
     xTaskCreate(vTaskOvertime, "vTaskOvertime", configMINIMAL_STACK_SIZE, NULL, 1, &xMusicHandle);
   } 

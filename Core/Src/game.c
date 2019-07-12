@@ -4,7 +4,7 @@ extern GameEngine game;
 
 void InitGameEngine() {
     game.timerValue = game.turnTime;
-	game.countScores = false;
+	game.countScores = true;
 	game.activePlayers = 0;
 	game.currentPlayer = 1;
 	game.turnTime = TIMER_MAX / 2;
