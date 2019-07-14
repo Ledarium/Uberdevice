@@ -135,7 +135,7 @@ void PrintTime() {
   {
     sprintf(
       lcdBuffer, 
-      (game.timerValue > 0 ? "        %1d:%02d        " : "       -%d:%02d        "),
+      (game.timerValue > 0 ? "       %2d:%02d        " : "      -%2d:%02d        "),
       abs(game.timerValue / 60), 
       abs(game.timerValue % 60)
     );
@@ -543,6 +543,7 @@ void vTaskTimerSetup(void *parameter) {
   }
 	while (1)
 	{
+    ResetTurnTimer();
     xTaskNotifyGive(xLCDUpdaterHandle);
     vTaskDelay(1);
     if (xSemaphoreTake(xButtonPressed, portMAX_DELAY) == pdPASS )
