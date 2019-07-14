@@ -1,6 +1,8 @@
 #ifndef __LCD_H
 #define __LCD_H
+
 #include "lcd.h"
+#include <string.h>
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -114,17 +116,17 @@ void LCD_Init(LCD_HandleTypeDef *lcd) {
     vTaskDelay(5);
     LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE);
     vTaskDelay(1);
-    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_SINGLELINE | LCD_5x8DOTS); // 0b00110000);
+    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_SINGLELINE | LCD_5x8DOTS);
     vTaskDelay(5);
-    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_SINGLELINE | LCD_5x8DOTS); // 0b00110000);
+    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_SINGLELINE | LCD_5x8DOTS);
     vTaskDelay(5);
-    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_MULTILINE | LCD_5x8DOTS); // 0b00110000);
+    LCD_SendCommand(lcd, LCD_FUNCTIONSET | LCD_4BITMODE | LCD_MULTILINE | LCD_5x8DOTS);
     vTaskDelay(5);
     // display & cursor home (keep this!)
     LCD_SendCommand(lcd, LCD_RETURNHOME);
     vTaskDelay(5);
     // display on, right shift, underline off, blink off
-    LCD_SendCommand(lcd, LCD_DISPLAYCONTROL|LCD_DISPLAYON|LCD_CURSOROFF|LCD_BLINKOFF); // 0b00001100);
+    LCD_SendCommand(lcd, LCD_DISPLAYCONTROL|LCD_DISPLAYON|LCD_CURSOROFF|LCD_BLINKOFF);
     vTaskDelay(5);
     // clear display (optional here)
     LCD_SendCommand(lcd, LCD_CLEARDISPLAY);
@@ -141,6 +143,7 @@ void LCD_SendString(LCD_HandleTypeDef *lcd,  char *str) {
         LCD_SendData(lcd, (uint8_t)(*str));
         str++;
     }
+    memset(&str,'\0', sizeof(str));
 }
 
 #endif
