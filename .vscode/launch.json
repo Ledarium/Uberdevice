@@ -12,21 +12,7 @@
             "configFiles": [
                 "target/stlink.cfg",
                 "target/stm32f1x.cfg"
-            ],
-            "swoConfig": {
-                "source": "probe",
-                "enabled": true,
-                "swoFrequency": 4000000,
-                "cpuFrequency": 48000000,
-                "decoders": [
-                        {
-                                "port": 0,
-                                "label": "Output",
-                                "type": "console",
-                                "encoding":"ascii"                                                                                              
-                        }
-                ]
-            }
+            ]
         }
     ]
 }

@@ -9,7 +9,8 @@
 			"task.h": "c",
 			"music.h": "c",
 			"usb_device.h": "c",
-			"main.h": "c"
+			"main.h": "c",
+			"game.h": "c"
 		}
 	}
 }

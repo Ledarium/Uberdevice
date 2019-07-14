@@ -100,6 +100,7 @@ TimerHandle_t xSecondsTimerHandle = NULL;
 TaskHandle_t xMusicHandle = NULL;
 TaskHandle_t xLCDUpdaterHandle = NULL;
 xSemaphoreHandle xButtonPressed;
+xSemaphoreHandle xLCD;
 
 asm(
 "tetris:\n\t"
@@ -130,14 +131,18 @@ static void MX_USART1_UART_Init(void);
 /* USER CODE BEGIN PFP */
 
 void PrintTime() {
-  LCD_MoveCursor(&hlcd, 0, 0);
-  sprintf(
-    lcdBuffer, 
-    (game.timerValue > 0 ? "        %1d:%02d        " : "       -%d:%02d        "),
-    abs(game.timerValue / 60), 
-    abs(game.timerValue % 60)
-  );
-  LCD_SendString(&hlcd, lcdBuffer);
+  if( xSemaphoreTake( xLCD, portMAX_DELAY ) == pdTRUE )
+  {
+    sprintf(
+      lcdBuffer, 
+      (game.timerValue > 0 ? "        %1d:%02d        " : "       -%d:%02d        "),
+      abs(game.timerValue / 60), 
+      abs(game.timerValue % 60)
+    );
+    LCD_MoveCursor(&hlcd, 0, 0);
+    LCD_SendString(&hlcd, lcdBuffer);
+    xSemaphoreGive( xLCD );
+  }
 }
 /* USER CODE END PFP */
 
@@ -181,6 +186,9 @@ int main(void)
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
   InitGameEngine();
+
+  xLCD = xSemaphoreCreateMutex();
+  xButtonPressed = xSemaphoreCreateBinary();
 
 	xTaskCreate(vTaskPlayerSetup, "Player", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	xTaskCreate(vTaskButtonPoll, "Buttons", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
@@ -494,23 +502,48 @@ void vTaskPlayerSetup(void *parameter)
       }
     }
 	}
-	xTaskCreate(vTaskTimerSetup, "TaskTimerSetup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+	xTaskCreate(vTaskConfig, "Config", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	vTaskDelete(NULL);
 }
 
-void vTaskTimerSetup(void *parameter) {
-  if (xLCDUpdaterHandle != NULL)
-  {
-    vTaskDelete(xLCDUpdaterHandle);
-    xLCDUpdaterHandle = NULL;
-  }
+void vTaskConfig(void *parameter) {
   LCD_MoveHome(&hlcd);
   LCD_SendString(&hlcd, "Settings");
 	while (1)
 	{
     LCD_MoveCursor(&hlcd, 1, 0);
-    sprintf(lcdBuffer, "Turn time: %1ld:%02ld     ",game.turnTime / 60, game.turnTime % 60);
+    sprintf(lcdBuffer, "Count scores: %3s   ", game.countScores ? "yes" : "no");
     LCD_SendString(&hlcd, lcdBuffer);
+    vTaskDelay(1);
+    if (xSemaphoreTake(xButtonPressed, portMAX_DELAY) == pdPASS ) {
+      if (plusButton->pressed)
+        game.countScores = !game.countScores;
+      if (minusButton->pressed)
+      // show round number or change the way it counts
+        game.countScores = !game.countScores;
+      if (bigButton->pressed) {
+        break;
+      }
+      vTaskDelay(10);
+    }
+	}
+	xTaskCreate(vTaskTimerSetup, "TaskTimerSetup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
+  xTaskCreate(vTaskTurnTimeUpdate, "TimeUpdate", configMINIMAL_STACK_SIZE, NULL, 1, &xLCDUpdaterHandle);
+	vTaskDelete(NULL);
+}
+
+void vTaskTimerSetup(void *parameter) {
+  if( xSemaphoreTake( xLCD, portMAX_DELAY ) == pdTRUE )
+  {
+    LCD_MoveHome(&hlcd);
+    LCD_MoveCursor(&hlcd, 1, 0);
+    sprintf(lcdBuffer, "Setup turn time");
+    LCD_SendString(&hlcd, lcdBuffer);
+    xSemaphoreGive( xLCD );
+  }
+	while (1)
+	{
+    xTaskNotifyGive(xLCDUpdaterHandle);
     vTaskDelay(1);
     if (xSemaphoreTake(xButtonPressed, portMAX_DELAY) == pdPASS )
     {
@@ -535,96 +568,63 @@ void vTaskTimerSetup(void *parameter) {
 		pdTRUE, //auto-reload
 		NULL, //not assigning ID 
 		vTimerCallback // function to call after timer expires
-		); 
+  ); 
 
-	xTaskCreate(vTaskConfig, "Config", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-	vTaskDelete(NULL);
-}
-
-void vTaskConfig(void *parameter) {
-  if (xLCDUpdaterHandle != NULL)
-  {
-    vTaskDelete(xLCDUpdaterHandle);
-    xLCDUpdaterHandle = NULL;
-  }
-  LCD_MoveHome(&hlcd);
-  LCD_SendString(&hlcd, "Settings");
-	while (1)
-	{
-    LCD_MoveCursor(&hlcd, 1, 0);
-    sprintf(lcdBuffer, "Count scores: %3s   ", game.countScores ? "yes" : "no");
-    LCD_SendString(&hlcd, lcdBuffer);
-    vTaskDelay(1);
-    if (xSemaphoreTake(xButtonPressed, portMAX_DELAY) == pdPASS ) {
-      if (plusButton->pressed)
-        game.countScores = !game.countScores;
-      if (minusButton->pressed)
-      // show round number or change the way it counts
-        game.countScores = !game.countScores;
-      if (bigButton->pressed) {
-        break;
-      }
-      vTaskDelay(10);
-    }
-	}
 	xTaskCreate(vTaskTurn, "TaskTurn", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	vTaskDelete(NULL);
 }
 
 void vTaskTurnTimeUpdate(void *parameter) {
-	TickType_t xLastWakeTime;
-	xLastWakeTime = xTaskGetTickCount();
-	
 	while (1)
 	{
+    ulTaskNotifyTake( pdTRUE, portMAX_DELAY );
     PrintTime();
-		vTaskDelayUntil(&xLastWakeTime,1000);
   }
 }
 
 void vTaskTurn(void *parameter) {
-  if (xLCDUpdaterHandle == NULL)
-  {
-    xTaskCreate(vTaskTurnTimeUpdate, "TimeUpdate", configMINIMAL_STACK_SIZE, NULL, 1, &xLCDUpdaterHandle);
-    vTaskDelay(100);
-  }
-	TickType_t xLastWakeTime;
-	xLastWakeTime = xTaskGetTickCount();
-
 	xTimerReset(xSecondsTimerHandle, 0);
-  LCD_MoveHome(&hlcd);
+  xTaskNotifyGive(xLCDUpdaterHandle);
+  vTaskDelay(5);
 
   if (game.countScores)
   {
-    LCD_MoveCursor(&hlcd, 2, 1);
-    for (int i = 1; i <= game.activePlayers; i++)
+    if( xSemaphoreTake( xLCD, portMAX_DELAY ) == pdTRUE )
     {
-      char tmp[8];
-      sprintf(tmp, "%1d:%3ld|", i, game.scores[i]);
-      strcat(lcdBuffer, tmp);
-      if (strlen(lcdBuffer) > (LCD_COLS-6))
+      LCD_MoveCursor(&hlcd, 2, 0);
+      memset(&lcdBuffer,'\0', sizeof(lcdBuffer));
+      lcdBuffer[0] = ' ';
+      for (int i = 1; i <= game.activePlayers; i++)
       {
-        LCD_SendString(&hlcd, lcdBuffer);
-        LCD_MoveCursor(&hlcd, 3, 1);
+        char tmp[8];
+        sprintf(tmp, "%1d:%3ld|", i, game.scores[i]);
+        strcat(lcdBuffer, tmp);
+        if (strlen(lcdBuffer) > (LCD_COLS-6))
+        {
+          LCD_SendString(&hlcd, lcdBuffer);
+          LCD_MoveCursor(&hlcd, 3, 0);
+          memset(&lcdBuffer,'\0', sizeof(lcdBuffer));
+          lcdBuffer[0] = ' ';
+        }
       }
+      LCD_SendString(&hlcd, lcdBuffer);
+      xSemaphoreGive( xLCD );
     }
-    LCD_SendString(&hlcd, lcdBuffer);
   }
-
-  LCD_MoveCursor(&hlcd, 1, 0);
-  sprintf(lcdBuffer, "Player: %1d Score: %3ld",game.currentPlayer, game.scores[game.currentPlayer]);
-  LCD_SendString(&hlcd, lcdBuffer);
+  if( xSemaphoreTake( xLCD, portMAX_DELAY ) == pdTRUE )
+  {
+    sprintf(lcdBuffer, "Player: %1d Score: %3ld",game.currentPlayer, game.scores[game.currentPlayer]);
+    LCD_MoveCursor(&hlcd, 1, 0);
+    LCD_SendString(&hlcd, lcdBuffer);
+    xSemaphoreGive( xLCD );
+  }
 
   while (1)
   {
     if (xSemaphoreTake(xButtonPressed, portMAX_DELAY) == pdPASS ) 
     {
-      if (plusButton->pressed) {
+      if (plusButton->pressed || minusButton->pressed) {
         xTaskCreate(vTaskTimerSetup, "TaskTimerSetup", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
-        break;
-      }
-      else if (minusButton->pressed) {
-        xTaskCreate(vTaskConfig, "Config", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
         break;
       }
       else if (bigButton->pressed) {
@@ -632,7 +632,6 @@ void vTaskTurn(void *parameter) {
         break;
       } 
     }
-		vTaskDelayUntil(&xLastWakeTime,100);
 //  HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
 	}
 	xTimerStop(xSecondsTimerHandle, 0);
@@ -646,22 +645,25 @@ void vTaskTurn(void *parameter) {
 }
 
 void vTaskTurnEnd(void *parameter) {
-  if (xLCDUpdaterHandle != NULL)
-  {
-    vTaskDelete(xLCDUpdaterHandle);
-    xLCDUpdaterHandle = NULL;
-  }
 	if (game.countScores) {
-		int32_t delta = 0;
-    LCD_MoveHome(&hlcd);
-    PrintTime();
-    LCD_MoveCursor(&hlcd, 1, 0);
-    sprintf(lcdBuffer, "Player: %1d Score: %3ld",game.currentPlayer, game.scores[game.currentPlayer]);
-    LCD_SendString(&hlcd, lcdBuffer);
-		while (1) {
-      LCD_MoveCursor(&hlcd, 2, 0);
-      sprintf(lcdBuffer, "Result: %+4ld", delta);
+    if( xSemaphoreTake( xLCD, portMAX_DELAY ) == pdTRUE )
+    {
+      LCD_MoveHome(&hlcd);
+      LCD_MoveCursor(&hlcd, 1, 0);
+      sprintf(lcdBuffer, "Player: %1d Score: %3ld",game.currentPlayer, game.scores[game.currentPlayer]);
       LCD_SendString(&hlcd, lcdBuffer);
+      xSemaphoreGive( xLCD );
+    }
+    xTaskNotifyGive(xLCDUpdaterHandle);
+    int32_t delta = 0;
+    while (1) {
+      if( xSemaphoreTake( xLCD, portMAX_DELAY ) == pdTRUE )
+      {
+        sprintf(lcdBuffer, "Result: %+4ld", delta);
+        LCD_MoveCursor(&hlcd, 2, 0);
+        LCD_SendString(&hlcd, lcdBuffer);
+        xSemaphoreGive( xLCD );
+      }
       if (xSemaphoreTake(xButtonPressed, portMAX_DELAY) == pdPASS ) {
         if (bigButton->pressed) {
           ChangeScore(delta);
@@ -677,11 +679,9 @@ void vTaskTurnEnd(void *parameter) {
           minusButton->pressed = false;
           delta--;
         }
-        vTaskDelay(10);
       }
     }
   }
-  ResetTurnTimer();
 	NextPlayer();
 	xTaskCreate(vTaskTurn, "TaskTurn", configMINIMAL_STACK_SIZE, NULL, 1, NULL);
 	vTaskDelete(NULL);
@@ -705,6 +705,7 @@ void vTaskOvertime(void *parameter) {
 
 void vTimerCallback(TimerHandle_t xTimer) {
   game.timerValue--;
+  xTaskNotifyGive(xLCDUpdaterHandle);
   if(game.timerValue == 0 && xMusicHandle == NULL) 
   {
     xTaskCreate(vTaskOvertime, "vTaskOvertime", configMINIMAL_STACK_SIZE, NULL, 1, &xMusicHandle);
@@ -712,7 +713,6 @@ void vTimerCallback(TimerHandle_t xTimer) {
 }
 
 void vTaskButtonPoll(void *parameter) {
-  xButtonPressed = xSemaphoreCreateBinary();
   bool state = false;
   while (1) {
     for(int i = 0; i<BUTTON_COUNT; i++)

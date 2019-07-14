@@ -82,7 +82,7 @@
 #define configUSE_16_BIT_TICKS		                0
 #define configIDLE_SHOULD_YIELD		                1
 #define configUSE_TASK_NOTIFICATIONS                1
-#define configUSE_MUTEXES                           0
+#define configUSE_MUTEXES                           1
 #define configUSE_RECURSIVE_MUTEXES                 0
 #define configUSE_COUNTING_SEMAPHORES               0
 
@@ -110,6 +110,7 @@ to exclude the API function. */
 #define INCLUDE_uxTaskPriorityGet                   1
 #define INCLUDE_vTaskDelete                         1
 #define INCLUDE_vTaskSuspend                        1
+#define INCLUDE_vTaskNotifyGive                     1
 #define INCLUDE_xResumeFromISR                      1
 #define INCLUDE_vTaskDelayUntil                     1
 #define INCLUDE_vTaskDelay                          1

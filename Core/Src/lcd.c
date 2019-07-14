@@ -81,8 +81,10 @@ HAL_StatusTypeDef LCD_SendInternal(LCD_HandleTypeDef *lcd, uint8_t data, uint8_t
     data_arr[2] = lo|flags|LCD_BACKLIGHT|LCD_PIN_EN;
     data_arr[3] = lo|flags|LCD_BACKLIGHT;
 
+    taskENTER_CRITICAL(); 
     res = HAL_I2C_Master_Transmit(lcd->I2C_Handle, lcd->address, data_arr,
                                   sizeof(data_arr), HAL_MAX_DELAY);
+    taskEXIT_CRITICAL(); 
     vTaskDelay(LCD_DELAY_MS);
     return res;
 }
